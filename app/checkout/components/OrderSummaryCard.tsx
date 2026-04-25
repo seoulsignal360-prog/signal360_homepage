@@ -1,16 +1,20 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import type { CheckoutProduct } from "@/app/checkout/CheckoutForm";
 
 export function OrderSummaryCard({
   product,
   isFormValid,
+  isLoading,
   onSubmit,
 }: {
   product: CheckoutProduct;
   isFormValid: boolean;
+  isLoading: boolean;
   onSubmit: () => void;
 }) {
+  const disabled = !isFormValid || isLoading;
   return (
     <aside className="bg-white rounded-card p-6 lg:sticky lg:top-24 flex flex-col gap-5">
       <h2 className="text-h3 text-fg">주문 요약</h2>
@@ -34,14 +38,21 @@ export function OrderSummaryCard({
       <button
         type="button"
         onClick={onSubmit}
-        disabled={!isFormValid}
-        className={`w-full h-14 rounded-pill text-lead font-bold transition-colors ${
-          isFormValid
-            ? "bg-primary text-white hover:bg-[#4338CA] active:bg-[#3730A3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-            : "bg-card-light text-muted cursor-not-allowed"
+        disabled={disabled}
+        className={`w-full h-14 rounded-pill text-lead font-bold transition-colors flex items-center justify-center gap-2 ${
+          disabled
+            ? "bg-card-light text-muted cursor-not-allowed"
+            : "bg-primary text-white hover:bg-[#4338CA] active:bg-[#3730A3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
         }`}
       >
-        결제하기
+        {isLoading ? (
+          <>
+            <Loader2 size={20} strokeWidth={2.5} className="animate-spin" />
+            결제 진행 중
+          </>
+        ) : (
+          "결제하기"
+        )}
       </button>
     </aside>
   );

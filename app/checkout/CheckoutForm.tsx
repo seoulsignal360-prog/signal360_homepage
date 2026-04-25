@@ -32,6 +32,7 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
     privacy: false,
     payment: false,
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const isNameValid = buyer.name.trim().length >= 2;
   const isPhoneValid = PHONE_RE.test(buyer.phone);
@@ -41,23 +42,45 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
   const isFormValid =
     isNameValid && isPhoneValid && isEmailValid && allAgreed;
 
-  const handleSubmit = () => {
-    if (!isFormValid) return;
-    console.log("결제 요청:", {
-      product: {
-        id: product.id,
-        slug: product.slug,
-        name: product.name,
-        price: product.price,
-      },
-      buyer,
-      agreements,
-    });
-    alert(
-      `결제 페이지 (다음 단계: SeedPay 연동)\n\n상품: ${product.name}\n금액: ${product.price.toLocaleString(
-        "ko-KR"
-      )}원\n구매자: ${buyer.name} / ${buyer.phone}`
-    );
+  const handleSubmit = async () => {
+    if (!isFormValid || isLoading) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/payment/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productSlug: product.slug,
+          buyer,
+          agreements,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.message || "결제 요청 실패");
+      }
+
+      // Build dynamic form and submit to SeedPay (redirect-style POST).
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.paymentUrl;
+      Object.entries(data.formData as Record<string, unknown>).forEach(
+        ([key, value]) => {
+          if (value === undefined || value === null) return;
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = String(value);
+          form.appendChild(input);
+        }
+      );
+      document.body.appendChild(form);
+      form.submit();
+      // Don't reset isLoading — page is about to navigate to SeedPay.
+    } catch (err) {
+      setIsLoading(false);
+      alert(err instanceof Error ? err.message : "결제 요청 중 오류 발생");
+    }
   };
 
   return (
@@ -74,6 +97,7 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
         <OrderSummaryCard
           product={product}
           isFormValid={isFormValid}
+          isLoading={isLoading}
           onSubmit={handleSubmit}
         />
       </div>
