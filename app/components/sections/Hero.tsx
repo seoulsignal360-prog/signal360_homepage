@@ -37,7 +37,7 @@ export function Hero() {
                 <br />
                 결국 시그널360에 있습니다.
               </h1>
-              <p className="text-body text-muted-on-dark">
+              <p className="text-lead font-normal text-muted-on-dark">
                 누구를 만나느냐가 설계사의 내일을 결정합니다.
                 <br />
                 이제 당신을 기다리는 진짜 고객을 만나세요.

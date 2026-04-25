@@ -75,7 +75,7 @@ export function Section2() {
               </>
             }
           />
-          <div className="flex flex-col gap-24 w-full">
+          <div className="flex flex-col gap-0 w-full">
             {features.map((f, i) => (
               <FeatureRow
                 key={i}
