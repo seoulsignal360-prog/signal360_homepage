@@ -41,12 +41,12 @@ export default async function AdminAuthenticatedLayout({
           >
             대시보드
           </Link>
-          <span className="px-3 py-2 text-body text-white/40 cursor-not-allowed">
+          <Link
+            href="/admin/orders"
+            className="px-3 py-2 rounded text-body hover:bg-white/10 transition-colors"
+          >
             주문 관리
-          </span>
-          <span className="px-3 py-2 text-body text-white/40 cursor-not-allowed">
-            결제 관리
-          </span>
+          </Link>
           <span className="px-3 py-2 text-body text-white/40 cursor-not-allowed">
             환불 관리
           </span>
