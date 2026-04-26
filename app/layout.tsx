@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { headers } from "next/headers";
 import { Footer } from "@/app/components/sections/Footer";
 import { Header } from "@/app/components/sections/Header";
 import "./globals.css";
@@ -20,11 +21,16 @@ export const metadata: Metadata = {
     "당신이 찾던 성공의 신호, 결국 시그널360에 있습니다. 누구를 만나느냐가 설계사의 내일을 결정합니다.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Header injected by proxy for /admin/* paths so we can suppress
+  // the public Header/Footer chrome on the admin shell.
+  const h = await headers();
+  const isAdmin = (h.get("x-pathname") || "").startsWith("/admin");
+
   return (
     <html
       lang="ko"
@@ -32,9 +38,9 @@ export default function RootLayout({
       className={`${pretendard.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Header />
+        {!isAdmin && <Header />}
         {children}
-        <Footer />
+        {!isAdmin && <Footer />}
       </body>
     </html>
   );
