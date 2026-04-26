@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { OrderEditPanel } from "./OrderEditPanel";
+import { RefundPanel } from "./RefundPanel";
 import {
   STATUS_BADGE,
   STATUS_LABEL,
@@ -29,6 +30,20 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
   failed: "실패",
   cancelled: "취소",
   pending_deposit: "입금 대기",
+};
+
+const REFUND_STATUS_LABEL: Record<string, string> = {
+  requested: "요청",
+  processing: "처리 중",
+  completed: "완료",
+  failed: "실패",
+};
+
+const REFUND_STATUS_BADGE: Record<string, string> = {
+  requested: "bg-yellow-100 text-yellow-800",
+  processing: "bg-blue-100 text-blue-800",
+  completed: "bg-green-100 text-green-800",
+  failed: "bg-red-100 text-red-800",
 };
 
 const METHOD_LABEL: Record<string, string> = {
@@ -70,6 +85,15 @@ type Payment = {
   created_at: string;
 };
 
+type Refund = {
+  id: string;
+  amount: number;
+  reason: string;
+  status: string;
+  requested_at: string;
+  completed_at: string | null;
+};
+
 function Field({
   label,
   children,
@@ -107,16 +131,26 @@ export default async function OrderDetailPage({
     notFound();
   }
 
-  const { data: payments } = await supabase
-    .from("payments")
-    .select(
-      "id, pg_provider, pg_transaction_id, method, amount, card_company, card_number_masked, installment_months, status, approved_at, cancelled_at, failed_at, failed_reason, created_at"
-    )
-    .eq("order_id", order.id)
-    .order("created_at", { ascending: false })
-    .returns<Payment[]>();
+  const [paymentRes, refundRes] = await Promise.all([
+    supabase
+      .from("payments")
+      .select(
+        "id, pg_provider, pg_transaction_id, method, amount, card_company, card_number_masked, installment_months, status, approved_at, cancelled_at, failed_at, failed_reason, created_at"
+      )
+      .eq("order_id", order.id)
+      .order("created_at", { ascending: false })
+      .returns<Payment[]>(),
+    supabase
+      .from("refunds")
+      .select("id, amount, reason, status, requested_at, completed_at")
+      .eq("order_id", order.id)
+      .order("requested_at", { ascending: false })
+      .returns<Refund[]>(),
+  ]);
 
-  const paymentList = payments ?? [];
+  const paymentList = paymentRes.data ?? [];
+  const refundList = refundRes.data ?? [];
+  const canRefund = order.status === "paid";
 
   return (
     <div className="flex flex-col gap-6 max-w-[1100px]">
@@ -177,6 +211,51 @@ export default async function OrderDetailPage({
           initialMemo={order.admin_memo ?? ""}
         />
       </div>
+
+      {canRefund && (
+        <RefundPanel orderId={order.id} amount={order.amount} />
+      )}
+
+      {refundList.length > 0 && (
+        <div className="bg-white rounded-card p-6 border border-card-light flex flex-col gap-4">
+          <h2 className="text-h3 text-fg">환불 내역</h2>
+          {refundList.map((r) => (
+            <div
+              key={r.id}
+              className="border border-card-light rounded-lg p-4 flex flex-col gap-3"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <span
+                  className={`inline-block px-2 py-0.5 rounded text-[12px] ${
+                    REFUND_STATUS_BADGE[r.status] ??
+                    "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {REFUND_STATUS_LABEL[r.status] ?? r.status}
+                </span>
+                <span className="text-body text-fg font-medium">
+                  {krw.format(r.amount)}원
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                <Field label="요청 시각">
+                  <span className="text-caption text-muted">
+                    {dateFmt.format(new Date(r.requested_at))}
+                  </span>
+                </Field>
+                <Field label="완료 시각">
+                  <span className="text-caption text-muted">
+                    {r.completed_at
+                      ? dateFmt.format(new Date(r.completed_at))
+                      : "—"}
+                  </span>
+                </Field>
+              </div>
+              <Field label="사유">{r.reason}</Field>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="bg-white rounded-card p-6 border border-card-light flex flex-col gap-4">
         <h2 className="text-h3 text-fg">결제 내역</h2>
