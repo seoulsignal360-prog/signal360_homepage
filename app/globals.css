@@ -59,6 +59,7 @@
   --animate-float: float 2s ease-in-out infinite;
   --animate-accordion-down: accordion-down 200ms ease-out;
   --animate-accordion-up: accordion-up 200ms ease-out;
+  --animate-marquee: marquee 60s linear infinite;
 
   /* === Font family === */
   --font-sans: var(--font-pretendard), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -79,10 +80,20 @@
   to { height: 0; }
 }
 
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-float,
   .animate-accordion-down,
-  .animate-accordion-up {
+  .animate-accordion-up,
+  .animate-marquee {
     animation: none;
   }
 }

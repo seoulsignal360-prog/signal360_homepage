@@ -21,15 +21,15 @@ export function FeatureRow({
         reverse ? "md:flex-row-reverse" : ""
       }`}
     >
-      <div className="flex flex-col gap-3 w-full md:max-w-[374px]">
-        <h3 className="text-h3 text-fg">{title}</h3>
-        <ul className="list-disc pl-7 flex flex-col gap-1 text-body text-muted">
+      <div className="flex flex-col gap-3 w-full md:flex-1 md:min-w-0 md:max-w-[374px]">
+        <h3 className="text-h3 text-fg break-keep">{title}</h3>
+        <ul className="list-disc pl-7 flex flex-col gap-1 text-body text-muted break-keep">
           {bullets.map((b, i) => (
             <li key={i}>{b}</li>
           ))}
         </ul>
       </div>
-      <div className="relative shrink-0 w-full max-w-[401px] aspect-square rounded-card overflow-hidden bg-card-light">
+      <div className="relative w-full md:w-[401px] md:shrink-0 aspect-square rounded-card overflow-hidden bg-card-light">
         <Image
           src={imageSrc}
           alt={imageAlt}
