@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { createServiceClient } from "@/utils/supabase/service";
 import { OrderEditPanel } from "./OrderEditPanel";
 import { RefundPanel } from "./RefundPanel";
+import { DeliveryPanel } from "./DeliveryPanel";
 import {
   STATUS_BADGE,
   STATUS_LABEL,
@@ -94,6 +96,17 @@ type Refund = {
   completed_at: string | null;
 };
 
+type Delivery = {
+  id: string;
+  status: "pending" | "in_progress" | "delivered";
+  consultant_id: string | null;
+  notes: string | null;
+  result_file_url: string | null;
+  started_at: string | null;
+  delivered_at: string | null;
+  updated_at: string;
+};
+
 function Field({
   label,
   children,
@@ -131,7 +144,7 @@ export default async function OrderDetailPage({
     notFound();
   }
 
-  const [paymentRes, refundRes] = await Promise.all([
+  const [paymentRes, refundRes, deliveryRes] = await Promise.all([
     supabase
       .from("payments")
       .select(
@@ -146,11 +159,32 @@ export default async function OrderDetailPage({
       .eq("order_id", order.id)
       .order("requested_at", { ascending: false })
       .returns<Refund[]>(),
+    supabase
+      .from("deliveries")
+      .select(
+        "id, status, consultant_id, notes, result_file_url, started_at, delivered_at, updated_at"
+      )
+      .eq("order_id", order.id)
+      .maybeSingle<Delivery>(),
   ]);
 
   const paymentList = paymentRes.data ?? [];
   const refundList = refundRes.data ?? [];
+  const delivery = deliveryRes.data;
   const canRefund = order.status === "paid";
+  const canDeliver =
+    order.status === "paid" ||
+    order.status === "in_progress" ||
+    order.status === "completed";
+
+  let consultantEmail: string | null = null;
+  if (delivery?.consultant_id) {
+    const service = createServiceClient();
+    const { data: authUser } = await service.auth.admin.getUserById(
+      delivery.consultant_id
+    );
+    consultantEmail = authUser?.user?.email ?? null;
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-[1100px]">
@@ -211,6 +245,18 @@ export default async function OrderDetailPage({
           initialMemo={order.admin_memo ?? ""}
         />
       </div>
+
+      {canDeliver && (
+        <DeliveryPanel
+          orderId={order.id}
+          initial={{
+            status: delivery?.status ?? "pending",
+            notes: delivery?.notes ?? "",
+            resultFileUrl: delivery?.result_file_url ?? "",
+          }}
+          consultantEmail={consultantEmail}
+        />
+      )}
 
       {canRefund && (
         <RefundPanel orderId={order.id} amount={order.amount} />

@@ -48,6 +48,12 @@ export default async function AdminAuthenticatedLayout({
             주문 관리
           </Link>
           <Link
+            href="/admin/orders?status=in_progress"
+            className="px-3 py-2 rounded text-body hover:bg-white/10 transition-colors"
+          >
+            진행 중 / 배송
+          </Link>
+          <Link
             href="/admin/orders?status=refunded"
             className="px-3 py-2 rounded text-body hover:bg-white/10 transition-colors"
           >

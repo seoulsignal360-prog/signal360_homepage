@@ -8,6 +8,17 @@ import { isOrderStatus } from "./types";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 
+const DELIVERY_STATUSES = ["pending", "in_progress", "delivered"] as const;
+type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+
+function isDeliveryStatus(v: unknown): v is DeliveryStatus {
+  return (
+    typeof v === "string" && (DELIVERY_STATUSES as readonly string[]).includes(v)
+  );
+}
+
+const URL_RE = /^https?:\/\/\S+$/;
+
 async function assertAdmin() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
@@ -184,4 +195,117 @@ export async function processRefund(
       error: `PG 환불 호출 실패: ${message.slice(0, 200)}`,
     };
   }
+}
+
+export async function upsertDelivery(
+  orderId: string,
+  input: {
+    status: string;
+    notes: string;
+    resultFileUrl: string;
+  }
+): Promise<ActionResult> {
+  if (!isDeliveryStatus(input.status)) {
+    return { ok: false, error: "잘못된 배송 상태입니다" };
+  }
+  const notes = input.notes.trim();
+  if (notes.length > 2000) {
+    return { ok: false, error: "메모는 2000자 이내여야 합니다" };
+  }
+  const fileUrl = input.resultFileUrl.trim();
+  if (fileUrl && !URL_RE.test(fileUrl)) {
+    return {
+      ok: false,
+      error: "결과 파일 URL은 http(s)://로 시작해야 합니다",
+    };
+  }
+
+  const { supabase, userId, error } = await assertAdmin();
+  if (!supabase || !userId) {
+    return { ok: false, error: error ?? "권한 없음" };
+  }
+
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .select("id, status")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (orderErr || !order) {
+    return { ok: false, error: "주문을 찾을 수 없습니다" };
+  }
+  if (
+    order.status !== "paid" &&
+    order.status !== "in_progress" &&
+    order.status !== "completed"
+  ) {
+    return {
+      ok: false,
+      error: "결제 완료된 주문만 배송 처리할 수 있습니다",
+    };
+  }
+
+  const { data: existing } = await supabase
+    .from("deliveries")
+    .select("id, status, started_at, delivered_at, consultant_id")
+    .eq("order_id", orderId)
+    .maybeSingle();
+
+  const now = new Date().toISOString();
+  const newStatus = input.status;
+
+  const startedAt =
+    newStatus === "pending"
+      ? null
+      : existing?.started_at ?? now;
+  const deliveredAt =
+    newStatus === "delivered"
+      ? existing?.delivered_at ?? now
+      : null;
+  const consultantId =
+    newStatus === "pending"
+      ? existing?.consultant_id ?? null
+      : existing?.consultant_id ?? userId;
+
+  const deliveryRow = {
+    order_id: orderId,
+    status: newStatus,
+    notes: notes || null,
+    result_file_url: fileUrl || null,
+    consultant_id: consultantId,
+    started_at: startedAt,
+    delivered_at: deliveredAt,
+  };
+
+  const { error: upsertErr } = existing
+    ? await supabase
+        .from("deliveries")
+        .update(deliveryRow)
+        .eq("id", existing.id)
+    : await supabase.from("deliveries").insert(deliveryRow);
+  if (upsertErr) {
+    console.error("[upsertDelivery]", upsertErr);
+    return { ok: false, error: "배송 정보 저장에 실패했습니다" };
+  }
+
+  // Mirror order.status to delivery state for paid/in_progress/completed flow.
+  // Don't touch order if it's already at a terminal non-delivery state.
+  const targetOrderStatus =
+    newStatus === "delivered"
+      ? "completed"
+      : newStatus === "in_progress"
+        ? "in_progress"
+        : "paid";
+  if (order.status !== targetOrderStatus) {
+    const { error: orderUpdateErr } = await supabase
+      .from("orders")
+      .update({ status: targetOrderStatus })
+      .eq("id", orderId);
+    if (orderUpdateErr) {
+      console.error("[upsertDelivery] order status sync failed", orderUpdateErr);
+    }
+  }
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/orders");
+  return { ok: true };
 }
