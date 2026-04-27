@@ -1,16 +1,18 @@
-import { ImagePlaceholder } from "@/app/components/ui/ImagePlaceholder";
+import Image from "next/image";
 
 type FeatureRowProps = {
   title: React.ReactNode;
   bullets: string[];
-  imageLabel: string;
+  imageSrc: string;
+  imageAlt: string;
   reverse?: boolean;
 };
 
 export function FeatureRow({
   title,
   bullets,
-  imageLabel,
+  imageSrc,
+  imageAlt,
   reverse = false,
 }: FeatureRowProps) {
   return (
@@ -27,13 +29,15 @@ export function FeatureRow({
           ))}
         </ul>
       </div>
-      <ImagePlaceholder
-        width={401}
-        height={401}
-        variant="light"
-        rounded="card"
-        label={imageLabel}
-      />
+      <div className="relative shrink-0 w-full max-w-[401px] aspect-square rounded-card overflow-hidden bg-card-light">
+        <Image
+          src={imageSrc}
+          alt={imageAlt}
+          fill
+          sizes="(min-width: 768px) 401px, 100vw"
+          className="object-contain"
+        />
+      </div>
     </div>
   );
 }

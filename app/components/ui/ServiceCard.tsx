@@ -1,10 +1,10 @@
-import { ImagePlaceholder } from "@/app/components/ui/ImagePlaceholder";
+import Image from "next/image";
 
 type ServiceCardProduct = {
   id: string;
   name: string;
   price: number;
-  imageLabel: string;
+  imageSrc: string;
 };
 
 type ServiceCardProps = {
@@ -33,15 +33,13 @@ export function ServiceCard({ product, onClick }: ServiceCardProps) {
       className="flex flex-col gap-5 cursor-pointer transition-transform duration-200 ease-out hover:-translate-y-1 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-4 rounded-card"
       {...interactiveProps}
     >
-      <div className="relative w-full aspect-square">
-        <ImagePlaceholder
+      <div className="relative w-full aspect-square rounded-card overflow-hidden bg-primary/10 transition-shadow duration-200 group-hover:shadow-lg">
+        <Image
+          src={product.imageSrc}
+          alt={product.name}
           fill
-          width={282}
-          height={282}
-          variant="primary"
-          rounded="card"
-          label={product.imageLabel}
-          className="transition-shadow duration-200 group-hover:shadow-lg"
+          sizes="(min-width: 1280px) 282px, (min-width: 640px) 50vw, 100vw"
+          className="object-contain"
         />
       </div>
       <div className="flex flex-col gap-1">
