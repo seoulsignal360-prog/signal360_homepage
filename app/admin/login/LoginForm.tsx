@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -55,8 +56,15 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
 
   return (
     <div className="bg-white rounded-card shadow-lg p-12 flex flex-col gap-8">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <span className="text-h3 text-fg tracking-tight">SIGNAL360</span>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <Image
+          src="/img/logo.png"
+          alt="SIGNAL360"
+          width={180}
+          height={36}
+          priority
+          className="h-9 w-auto"
+        />
         <h1 className="text-h2 text-fg">관리자 로그인</h1>
       </div>
 

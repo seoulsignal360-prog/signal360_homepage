@@ -9,7 +9,7 @@ type Product = {
   price: number;
   category: "analysis" | "replan";
   tier: "general" | "silver";
-  imageLabel: string;
+  imageSrc: string;
 };
 
 const products: Product[] = [
@@ -19,7 +19,7 @@ const products: Product[] = [
     price: 90000,
     category: "analysis",
     tier: "general",
-    imageLabel: "분석 일반",
+    imageSrc: "/img/service-analysis-general.png",
   },
   {
     id: "analysis-silver",
@@ -27,7 +27,7 @@ const products: Product[] = [
     price: 80000,
     category: "analysis",
     tier: "silver",
-    imageLabel: "분석 실버",
+    imageSrc: "/img/service-analysis-silver.png",
   },
   {
     id: "replan-silver",
@@ -35,7 +35,7 @@ const products: Product[] = [
     price: 70000,
     category: "replan",
     tier: "silver",
-    imageLabel: "재설계 실버",
+    imageSrc: "/img/service-replan-silver.png",
   },
   {
     id: "replan-general",
@@ -43,7 +43,7 @@ const products: Product[] = [
     price: 80000,
     category: "replan",
     tier: "general",
-    imageLabel: "재설계 일반",
+    imageSrc: "/img/service-replan-general.png",
   },
 ];
 

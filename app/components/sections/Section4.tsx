@@ -11,35 +11,41 @@ const reviews = [
     name: "김** 지점장",
     company: "G보험 부산지점",
     quote: "30개 중 8개 계약! 미팅률도 역대급이에요.",
+    avatarSrc: "/img/avatar-man-1.png",
   },
   {
     name: "박** 팀장",
     company: "H생명 서울지점",
     quote:
       "DB 품질이 정말 다릅니다. 계약 전환율이 평균 2배 올랐어요.",
+    avatarSrc: "/img/avatar-woman-1.png",
   },
   {
     name: "이** 매니저",
     company: "S손보 인천지점",
     quote:
       "기존 DB 업체와 비교가 안 됩니다. 진짜 상담 의향 있는 고객만 와요.",
+    avatarSrc: "/img/avatar-man-senior.png",
   },
   {
     name: "최** 지점장",
     company: "K생명 대구지점",
     quote:
       "30대 고객 위주로 매칭 받았는데 미팅 성사율이 70% 넘어요.",
+    avatarSrc: "/img/avatar-man-2.png",
   },
   {
     name: "정** 팀장",
     company: "M보험 광주지점",
     quote: "QA 필터링이 확실해서 헛걸음하는 일이 없습니다.",
+    avatarSrc: "/img/avatar-woman-2.png",
   },
   {
     name: "강** 매니저",
     company: "D보험 울산지점",
     quote:
       "심층 메모 덕분에 첫 통화부터 깊이 있는 상담이 가능했어요.",
+    avatarSrc: "/img/avatar-woman-3.png",
   },
 ];
 
@@ -73,7 +79,7 @@ export function Section4() {
                   name={r.name}
                   company={r.company}
                   quote={r.quote}
-                  avatarLabel={`${r.name} 프로필`}
+                  avatarSrc={r.avatarSrc}
                 />
               </div>
             ))}

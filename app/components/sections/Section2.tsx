@@ -15,7 +15,8 @@ const features = [
       "55세~84세 고객 중 실 납부 보험료 10만원 이상",
       "담당 설계사 X, 2년 내 병력확인 O",
     ],
-    imageLabel: "노트북 보는 사람",
+    imageSrc: "/img/feature-laptop-analysis.png",
+    imageAlt: "노트북에서 데이터를 분석하는 모습",
   },
   {
     title: (
@@ -29,7 +30,8 @@ const features = [
       "품질 기준 미달 DB = 전량 폐기",
       "납품된 DB 100% 모니터링 + 재검수 진행",
     ],
-    imageLabel: "사무실 일하는 사람",
+    imageSrc: "/img/feature-qa-checklist.png",
+    imageAlt: "체크리스트로 품질을 검증하는 모습",
   },
   {
     title: (
@@ -43,7 +45,8 @@ const features = [
       "보험료 과납, 암보험 관심 등",
       "꼼꼼한 보장 분석 정보도 메모 전달",
     ],
-    imageLabel: "핸드폰 + 손",
+    imageSrc: "/img/feature-phone-memo.png",
+    imageAlt: "전화로 상담하는 모습",
   },
   {
     title: (
@@ -58,7 +61,8 @@ const features = [
       "계약 전환에 대한 니즈 상기",
       "여유로운 시간대 설정",
     ],
-    imageLabel: "전화기 다이얼",
+    imageSrc: "/img/feature-consultation.png",
+    imageAlt: "상담을 진행하는 모습",
   },
 ];
 
@@ -81,7 +85,8 @@ export function Section2() {
                 key={i}
                 title={f.title}
                 bullets={f.bullets}
-                imageLabel={f.imageLabel}
+                imageSrc={f.imageSrc}
+                imageAlt={f.imageAlt}
                 reverse={i % 2 === 1}
               />
             ))}

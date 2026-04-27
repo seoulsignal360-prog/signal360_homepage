@@ -1,17 +1,16 @@
-import { ImagePlaceholder } from "@/app/components/ui/ImagePlaceholder";
+import Image from "next/image";
 import { StatItem } from "@/app/components/ui/StatItem";
 
 export function Section3() {
   return (
     <section id="stats" className="relative bg-navy xl:h-[433px]">
       <div className="relative h-[280px] xl:absolute xl:right-0 xl:top-0 xl:w-1/2 xl:h-full">
-        <ImagePlaceholder
+        <Image
+          src="/img/stats-coins-chart.png"
+          alt=""
           fill
-          width={976}
-          height={433}
-          variant="dark"
-          rounded="none"
-          label="동전 + 성장 차트 (Figma image 1392)"
+          sizes="(min-width: 1280px) 50vw, 100vw"
+          className="object-cover"
         />
       </div>
       <div className="relative z-10 px-6 py-16 xl:py-0 xl:h-full xl:flex xl:flex-col xl:justify-center xl:pl-12 2xl:pl-[360px]">

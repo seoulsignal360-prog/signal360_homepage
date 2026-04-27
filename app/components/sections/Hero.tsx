@@ -1,6 +1,6 @@
+import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { Container } from "@/app/components/ui/Container";
-import { ImagePlaceholder } from "@/app/components/ui/ImagePlaceholder";
 import { PillButton } from "@/app/components/ui/PillButton";
 import { StatItem } from "@/app/components/ui/StatItem";
 
@@ -14,13 +14,13 @@ const stats = [
 export function Hero() {
   return (
     <section id="top" className="relative h-[874px] overflow-hidden">
-      <ImagePlaceholder
+      <Image
+        src="/img/hero-cityscape.png"
+        alt=""
         fill
-        width={1920}
-        height={874}
-        variant="dark"
-        rounded="none"
-        label="Hero 배경 — 도시/빌딩 일러스트 (Figma image 1377)"
+        priority
+        sizes="100vw"
+        className="object-cover"
       />
       <div className="absolute inset-0 bg-navy/70" />
       <Container className="relative z-10 h-full flex flex-col justify-between items-center py-16">
