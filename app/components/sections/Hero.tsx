@@ -14,18 +14,16 @@ const stats = [
 export function Hero() {
   return (
     <section id="top" className="relative h-[874px] overflow-hidden bg-navy">
-      <div className="absolute inset-x-0 bottom-0 h-[55%] opacity-45">
-        <Image
-          src="/img_nobg/hero.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-bottom blur-[1px]"
-        />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/85 to-navy/40" />
-      <div className="absolute inset-0 bg-navy/30" />
+      <Image
+        src="/img_nobg/hero.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
+      />
+      <div className="absolute inset-0 bg-navy/65" />
+      <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-transparent to-navy/40" />
       <Container className="relative z-10 h-full flex flex-col justify-between items-center py-16">
         <div />
 
