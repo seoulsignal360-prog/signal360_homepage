@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { generateEdiDate, generateHashString } from "@/lib/seedpay/hash";
 import type { PaymentRequestParams } from "@/lib/seedpay/types";
+import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 
 const PHONE_RE = /^010-\d{4}-\d{4}$/;
@@ -92,13 +94,21 @@ export async function POST(request: Request) {
   }
   const orderNumber = orderNumberData as string;
 
-  // 6. INSERT order
+  // 6. Resolve auth (member vs guest)
+  const cookieStore = await cookies();
+  const authClient = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
+  const userId = user?.id ?? null;
+
+  // 7. INSERT order
   const { data: order, error: orderErr } = await sb
     .from("orders")
     .insert({
       order_number: orderNumber,
-      user_id: null,
-      is_guest: true,
+      user_id: userId,
+      is_guest: !userId,
       buyer_name: buyer.name.trim(),
       buyer_phone: buyer.phone,
       buyer_email: buyer.email || null,

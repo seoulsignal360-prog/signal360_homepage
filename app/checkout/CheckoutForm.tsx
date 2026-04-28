@@ -21,11 +21,17 @@ export type Agreements = { terms: boolean; privacy: boolean; payment: boolean };
 const PHONE_RE = /^010-\d{4}-\d{4}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function CheckoutForm({ product }: { product: CheckoutProduct }) {
+export function CheckoutForm({
+  product,
+  initialBuyer,
+}: {
+  product: CheckoutProduct;
+  initialBuyer?: BuyerInfo | null;
+}) {
   const [buyer, setBuyer] = useState<BuyerInfo>({
-    name: "",
-    phone: "",
-    email: "",
+    name: initialBuyer?.name ?? "",
+    phone: initialBuyer?.phone ?? "",
+    email: initialBuyer?.email ?? "",
   });
   const [agreements, setAgreements] = useState<Agreements>({
     terms: false,
