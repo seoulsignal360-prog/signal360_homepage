@@ -23,14 +23,12 @@ export function Section1() {
               }
               className="md:max-w-[582px]"
             />
-            <div className="flex flex-col gap-2 items-start text-left md:items-end md:text-right md:max-w-[321px]">
-              <h3 className="text-h3 text-fg">모두 남의 일은 아니시죠?</h3>
-              <p className="text-body text-muted">
-                ‘보험료 절감’, ‘불필요한 특약 사항 정리’로
-                <br />
-                만들어진 DB는 더 이상 시장에서
-                <br />
-                반응하지 않으니까요.
+            <div className="flex flex-col gap-2 items-start text-left md:items-end md:text-right md:max-w-[360px]">
+              <h3 className="text-h3 text-fg break-keep">
+                분명 DB는 샀는데, 왜 만남으로 이어지지 않을까요?
+              </h3>
+              <p className="text-body text-muted break-keep">
+                문제는 상담이 아니라, DB가 만들어지는 구조에 있습니다.
               </p>
             </div>
           </div>
