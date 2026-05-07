@@ -19,7 +19,7 @@ const REASON_MESSAGES: Record<string, string> = {
 };
 
 type FailPageProps = {
-  searchParams: Promise<{ order?: string; reason?: string }>;
+  searchParams: Promise<{ order?: string; reason?: string; detail?: string }>;
 };
 
 export default async function FailPage({ searchParams }: FailPageProps) {
@@ -27,6 +27,7 @@ export default async function FailPage({ searchParams }: FailPageProps) {
   const reason = params.reason || "unknown";
   const orderNumber = params.order;
   const message = REASON_MESSAGES[reason] || "결제에 실패했습니다";
+  const detail = params.detail?.trim();
 
   return (
     <main className="flex-1 bg-surface flex items-center py-16">
@@ -40,6 +41,11 @@ export default async function FailPage({ searchParams }: FailPageProps) {
           />
           <h1 className="text-h2 text-fg">결제에 실패했습니다</h1>
           <p className="text-body text-muted">{message}</p>
+          {detail && (
+            <p className="text-caption text-fg bg-surface px-4 py-3 rounded-md w-full">
+              {detail}
+            </p>
+          )}
           {orderNumber && (
             <div className="flex justify-between gap-3 w-full text-body">
               <span className="text-muted">주문번호</span>

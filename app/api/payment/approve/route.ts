@@ -67,10 +67,13 @@ export async function POST(request: Request) {
     mbsReserved: get("mbsReserved"),
   };
 
-  const failRedirect = (reason: string, ord?: string) => {
+  const failRedirect = (reason: string, ord?: string, detail?: string) => {
     const url = new URL("/checkout/fail", request.url);
     url.searchParams.set("reason", reason);
     if (ord) url.searchParams.set("order", ord);
+    // PG-supplied message ("비밀번호 오류", "한도초과" etc) — surfaced to the
+    // user so they know how to recover. Truncated to keep the URL sane.
+    if (detail) url.searchParams.set("detail", detail.slice(0, 120));
     return NextResponse.redirect(url, 303);
   };
   const successRedirect = (ord: string) => {
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
         `Auth failed: ${data.resultCd} ${data.resultMsg}`
       );
     }
-    return failRedirect("user_cancel", data.ordNo);
+    return failRedirect("user_cancel", data.ordNo, data.resultMsg);
   }
 
   // 3. Env check (fail fast)
@@ -187,7 +190,16 @@ export async function POST(request: Request) {
         ? `${err.code}: ${err.message}`
         : "approve_call_failed";
     await markFailed(order.id, reason);
-    return failRedirect("approval_failed", data.ordNo);
+    // Surface the PG's resultMsg ("비밀번호 오류" etc) so the user can recover.
+    // Strip the "[SeedPay 9998]" prefix from PaymentError.message and prefer
+    // the cleaner resultMsg off the response when available.
+    let detail = "결제 승인 중 오류가 발생했습니다";
+    if (err instanceof PaymentError) {
+      const resultMsg =
+        (err.response as { resultMsg?: string } | undefined)?.resultMsg;
+      detail = resultMsg || err.message.replace(/^\[SeedPay [^\]]+\]\s*/, "");
+    }
+    return failRedirect("approval_failed", data.ordNo, detail);
   }
 
   // 8. Persist successful approval + flip order status to 'paid'
