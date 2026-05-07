@@ -1,28 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AgreementCheckboxes } from "@/app/checkout/components/AgreementCheckboxes";
 import { BuyerInfoForm } from "@/app/checkout/components/BuyerInfoForm";
 import { OrderSummaryCard } from "@/app/checkout/components/OrderSummaryCard";
 import { ProductSummaryCard } from "@/app/checkout/components/ProductSummaryCard";
 
-// SeedPay's pgAsistant.js exposes a global `pgAsistant.SendPay()` that creates
-// an iframe overlay (or popup if popupYN=Y on the form) and submits the form
-// into it. Required for /payData to render — submitting the form directly via
-// form.submit() in the main window leaves /payData blank because its JS
-// expects an iframe parent listening for postMessage events.
+// SeedPay's pgAsistant.js exposes a bare global `SendPay()` (not a namespaced
+// `pgAsistant.SendPay`). It builds an iframe overlay, sets form.target to that
+// iframe, and submits — required so /payData renders. Submitting the form
+// directly to the main window leaves /payData blank: its JS posts results to
+// window.parent and expects to be inside the iframe pgAsistant created.
+//
+// pgAsistant.js's postMessage handler also calls bare-global `pay_result_submit`
+// and `pay_result_close` (snake_case). It does NOT define them itself — they
+// are integrator-supplied callbacks. Without them the SUCCESS path throws
+// `ReferenceError: pay_result_submit is not defined` and the user gets stuck
+// (even though SeedPay has already approved the charge). We define them on
+// window before SendPay is called.
 declare global {
   interface Window {
-    pgAsistant?: {
-      SendPay: (form: HTMLFormElement) => void;
-    };
+    SendPay?: (form: HTMLFormElement, mode?: string) => void;
+    pay_result_submit?: () => void;
+    pay_result_close?: () => void;
+    payResult?: HTMLFormElement;
   }
 }
 
 const PG_ASISTANT_SRC = "https://pay.seedpayments.co.kr/js/pgAsistant.js";
 
 function loadPgAsistant(): Promise<void> {
-  if (typeof window !== "undefined" && window.pgAsistant?.SendPay) {
+  if (typeof window !== "undefined" && typeof window.SendPay === "function") {
     return Promise.resolve();
   }
   return new Promise((resolve, reject) => {
@@ -82,6 +90,24 @@ export function CheckoutForm({
   });
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    // pgAsistant.js calls these on SUCCESS / CANCEL postMessage events. Submit
+    // the result form pgAsistant builds (named "payResult") to our returnUrl.
+    window.pay_result_submit = () => {
+      const form = (document.forms.namedItem("payResult") ||
+        window.payResult) as HTMLFormElement | null;
+      if (form) form.submit();
+    };
+    window.pay_result_close = () => {
+      // User cancelled in the SeedPay iframe; reset the button so they can retry.
+      setIsLoading(false);
+    };
+    return () => {
+      delete window.pay_result_submit;
+      delete window.pay_result_close;
+    };
+  }, []);
+
   const isNameValid = buyer.name.trim().length >= 2;
   const isPhoneValid = PHONE_RE.test(buyer.phone);
   const isEmailValid = !buyer.email || EMAIL_RE.test(buyer.email);
@@ -133,12 +159,10 @@ export function CheckoutForm({
       });
       document.body.appendChild(form);
 
-      if (typeof window.pgAsistant?.SendPay === "function") {
-        window.pgAsistant.SendPay(form);
-      } else {
-        // Fallback if pgAsistant.js loaded but didn't expose SendPay
-        form.submit();
+      if (typeof window.SendPay !== "function") {
+        throw new Error("SeedPay 결제 스크립트 로드 실패");
       }
+      window.SendPay(form);
       // Don't reset isLoading — payment iframe is about to take over.
     } catch (err) {
       setIsLoading(false);
