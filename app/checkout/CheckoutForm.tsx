@@ -6,6 +6,48 @@ import { BuyerInfoForm } from "@/app/checkout/components/BuyerInfoForm";
 import { OrderSummaryCard } from "@/app/checkout/components/OrderSummaryCard";
 import { ProductSummaryCard } from "@/app/checkout/components/ProductSummaryCard";
 
+// SeedPay's pgAsistant.js exposes a global `pgAsistant.SendPay()` that creates
+// an iframe overlay (or popup if popupYN=Y on the form) and submits the form
+// into it. Required for /payData to render — submitting the form directly via
+// form.submit() in the main window leaves /payData blank because its JS
+// expects an iframe parent listening for postMessage events.
+declare global {
+  interface Window {
+    pgAsistant?: {
+      SendPay: (form: HTMLFormElement) => void;
+    };
+  }
+}
+
+const PG_ASISTANT_SRC = "https://pay.seedpayments.co.kr/js/pgAsistant.js";
+
+function loadPgAsistant(): Promise<void> {
+  if (typeof window !== "undefined" && window.pgAsistant?.SendPay) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[data-seedpay-asistant]`
+    );
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("pgAsistant.js load failed")),
+        { once: true }
+      );
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = PG_ASISTANT_SRC;
+    script.dataset.seedpayAsistant = "true";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("pgAsistant.js load failed"));
+    document.head.appendChild(script);
+  });
+}
+
 export type CheckoutProduct = {
   id: string;
   slug: string;
@@ -66,23 +108,38 @@ export function CheckoutForm({
         throw new Error(data?.message || "결제 요청 실패");
       }
 
-      // Build dynamic form and submit to SeedPay (redirect-style POST).
+      // Lazy-load SeedPay's pgAsistant.js, then call SendPay() so the payment
+      // window opens in an iframe overlay with the proper parent message
+      // listener context. Without SendPay the /payData page renders blank.
+      await loadPgAsistant();
+
       const form = document.createElement("form");
+      form.id = "payForm";
+      form.name = "payForm";
       form.method = "POST";
       form.action = data.paymentUrl;
-      Object.entries(data.formData as Record<string, unknown>).forEach(
-        ([key, value]) => {
-          if (value === undefined || value === null) return;
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = String(value);
-          form.appendChild(input);
-        }
-      );
+      // popupYN=N → iframe mode (default). Set to 'Y' for popup window mode.
+      const fields: Record<string, unknown> = {
+        ...(data.formData as Record<string, unknown>),
+        popupYN: "N",
+      };
+      Object.entries(fields).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      });
       document.body.appendChild(form);
-      form.submit();
-      // Don't reset isLoading — page is about to navigate to SeedPay.
+
+      if (typeof window.pgAsistant?.SendPay === "function") {
+        window.pgAsistant.SendPay(form);
+      } else {
+        // Fallback if pgAsistant.js loaded but didn't expose SendPay
+        form.submit();
+      }
+      // Don't reset isLoading — payment iframe is about to take over.
     } catch (err) {
       setIsLoading(false);
       alert(err instanceof Error ? err.message : "결제 요청 중 오류 발생");
