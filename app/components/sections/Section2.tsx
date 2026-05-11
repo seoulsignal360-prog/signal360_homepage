@@ -12,7 +12,7 @@ const features = [
       </>
     ),
     bullets: [
-      "55세~84세 고객 중 실 납부 보험료 10만원 이상",
+      "96년생~57년생 고객 중 실 납부 보험료 10만원 이상",
       "담당 설계사 X, 2년 내 병력확인 O",
     ],
     imageSrc: "/img_nobg/feature-target.png",
