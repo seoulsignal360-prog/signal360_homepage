@@ -27,7 +27,9 @@ export function FaqItem({ value, question, answer }: FaqItemProps) {
         </Accordion.Trigger>
       </Accordion.Header>
       <Accordion.Content className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-        <div className="pb-6 px-8 text-body text-muted">{answer}</div>
+        <div className="pb-6 px-8 text-body text-muted whitespace-pre-line">
+          {answer}
+        </div>
       </Accordion.Content>
     </Accordion.Item>
   );
