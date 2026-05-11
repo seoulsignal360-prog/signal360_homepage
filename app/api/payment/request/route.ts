@@ -10,9 +10,13 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type RequestBody = {
   productSlug?: string;
+  quantity?: number;
   buyer?: { name?: string; phone?: string; email?: string };
   agreements?: { terms?: boolean; privacy?: boolean; payment?: boolean };
 };
+
+const MIN_QTY = 1;
+const MAX_QTY = 999;
 
 function jsonError(status: number, code: string, message: string) {
   return NextResponse.json({ error: code, message }, { status });
@@ -31,6 +35,18 @@ export async function POST(request: Request) {
   const slug = body.productSlug;
   const buyer = body.buyer;
   const agreements = body.agreements;
+  // Default to 1 if missing; reject non-integers or out-of-range values. We
+  // mirror the client-side stepper bounds here so a tampered request can't
+  // pass through with quantity=10_000 etc.
+  const quantity =
+    body.quantity === undefined || body.quantity === null ? 1 : body.quantity;
+  if (
+    !Number.isInteger(quantity) ||
+    quantity < MIN_QTY ||
+    quantity > MAX_QTY
+  ) {
+    return jsonError(400, "VALIDATION", "수량이 올바르지 않습니다");
+  }
   if (!slug || typeof slug !== "string") {
     return jsonError(400, "VALIDATION", "productSlug is required");
   }
@@ -102,7 +118,10 @@ export async function POST(request: Request) {
   } = await authClient.auth.getUser();
   const userId = user?.id ?? null;
 
-  // 7. INSERT order
+  // 7. INSERT order — amount is the total (unit price × quantity). quantity is
+  // stored alongside so admin/receipt views can render "n × unitPrice" without
+  // having to divine the unit price from a possibly-drifted products row.
+  const totalAmount = product.price * quantity;
   const { data: order, error: orderErr } = await sb
     .from("orders")
     .insert({
@@ -114,7 +133,8 @@ export async function POST(request: Request) {
       buyer_email: buyer.email || null,
       product_id: product.id,
       product_name_snapshot: product.name,
-      amount: product.price,
+      quantity,
+      amount: totalAmount,
       status: "pending",
     })
     .select("id")
@@ -124,14 +144,18 @@ export async function POST(request: Request) {
     return jsonError(500, "DB_ERROR", "order creation failed");
   }
 
-  // 7. Build SeedPay request params
+  // 7. Build SeedPay request params — goodsAmt is the TOTAL the user pays
+  // (unit price × quantity), and the goodsNm gets a "× N" suffix so the buyer
+  // sees the quantity on the PG-rendered card-entry screen.
   const ediDate = generateEdiDate();
-  const goodsAmt = String(product.price);
+  const goodsAmt = String(totalAmount);
+  const goodsNm =
+    quantity > 1 ? `${product.name} × ${quantity}` : product.name;
   const hashString = generateHashString(mid, ediDate, goodsAmt, merchantKey);
   const formData: PaymentRequestParams = {
     method: "CARD",
     mid,
-    goodsNm: product.name,
+    goodsNm,
     ordNo: orderNumber,
     goodsAmt,
     ordNm: buyer.name.trim(),
@@ -148,7 +172,7 @@ export async function POST(request: Request) {
     order_id: order.id,
     pg_provider: "seedpay",
     method: "card",
-    amount: product.price,
+    amount: totalAmount,
     status: "requested",
     raw_request: formData as unknown as Record<string, unknown>,
   });

@@ -88,6 +88,7 @@ export function CheckoutForm({
     privacy: false,
     payment: false,
   });
+  const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -125,6 +126,7 @@ export function CheckoutForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productSlug: product.slug,
+          quantity,
           buyer,
           agreements,
         }),
@@ -183,6 +185,8 @@ export function CheckoutForm({
       <div className="lg:col-span-1">
         <OrderSummaryCard
           product={product}
+          quantity={quantity}
+          onQuantityChange={setQuantity}
           isFormValid={isFormValid}
           isLoading={isLoading}
           onSubmit={handleSubmit}

@@ -20,7 +20,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const sb = createServiceClient();
   const { data: order } = await sb
     .from("orders")
-    .select("order_number, status, amount, product_name_snapshot")
+    .select("order_number, status, amount, quantity, product_name_snapshot")
     .eq("order_number", orderNumber)
     .maybeSingle();
 
@@ -50,6 +50,12 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
                 {order.product_name_snapshot}
               </span>
             </div>
+            {order.quantity > 1 && (
+              <div className="flex justify-between gap-3">
+                <span className="text-muted">수량</span>
+                <span className="text-fg font-medium">{order.quantity}개</span>
+              </div>
+            )}
             <div className="flex justify-between gap-3 items-baseline">
               <span className="text-muted">결제금액</span>
               <span className="text-primary text-lead font-bold">
