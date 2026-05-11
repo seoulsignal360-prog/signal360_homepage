@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { isValidQuantity, isValidRegion } from "@/lib/checkout/constants";
 import { generateEdiDate, generateHashString } from "@/lib/seedpay/hash";
 import type { PaymentRequestParams } from "@/lib/seedpay/types";
 import { createClient } from "@/utils/supabase/server";
@@ -11,12 +12,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 type RequestBody = {
   productSlug?: string;
   quantity?: number;
+  region?: string;
   buyer?: { name?: string; phone?: string; email?: string };
   agreements?: { terms?: boolean; privacy?: boolean; payment?: boolean };
 };
-
-const MIN_QTY = 1;
-const MAX_QTY = 999;
 
 function jsonError(status: number, code: string, message: string) {
   return NextResponse.json({ error: code, message }, { status });
@@ -35,18 +34,22 @@ export async function POST(request: Request) {
   const slug = body.productSlug;
   const buyer = body.buyer;
   const agreements = body.agreements;
-  // Default to 1 if missing; reject non-integers or out-of-range values. We
-  // mirror the client-side stepper bounds here so a tampered request can't
-  // pass through with quantity=10_000 etc.
-  const quantity =
-    body.quantity === undefined || body.quantity === null ? 1 : body.quantity;
-  if (
-    !Number.isInteger(quantity) ||
-    quantity < MIN_QTY ||
-    quantity > MAX_QTY
-  ) {
-    return jsonError(400, "VALIDATION", "수량이 올바르지 않습니다");
+  // Quantity must be a multiple of 10 in [QTY_MIN, QTY_MAX]. We re-check
+  // server-side using the same predicate the client uses so a tampered
+  // request can't smuggle quantity=1 or quantity=10_000.
+  if (!isValidQuantity(body.quantity)) {
+    return jsonError(
+      400,
+      "VALIDATION",
+      "수량은 10건 단위로 선택해주세요 (최소 10, 최대 990)"
+    );
   }
+  const quantity = body.quantity;
+  // Region is required and must match the canonical whitelist.
+  if (!isValidRegion(body.region)) {
+    return jsonError(400, "VALIDATION", "지역을 선택해주세요");
+  }
+  const region = body.region;
   if (!slug || typeof slug !== "string") {
     return jsonError(400, "VALIDATION", "productSlug is required");
   }
@@ -134,6 +137,7 @@ export async function POST(request: Request) {
       product_id: product.id,
       product_name_snapshot: product.name,
       quantity,
+      region,
       amount: totalAmount,
       status: "pending",
     })

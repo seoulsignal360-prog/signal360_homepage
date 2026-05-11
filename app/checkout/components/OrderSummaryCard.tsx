@@ -2,9 +2,12 @@
 
 import { Loader2, Minus, Plus } from "lucide-react";
 import type { CheckoutProduct } from "@/app/checkout/CheckoutForm";
-
-const MIN_QTY = 1;
-const MAX_QTY = 999;
+import {
+  QTY_MAX,
+  QTY_MIN,
+  QTY_STEP,
+  snapQuantity,
+} from "@/lib/checkout/constants";
 
 export function OrderSummaryCard({
   product,
@@ -23,29 +26,35 @@ export function OrderSummaryCard({
 }) {
   const disabled = !isFormValid || isLoading;
   const total = product.price * quantity;
-  const dec = () => onQuantityChange(Math.max(MIN_QTY, quantity - 1));
-  const inc = () => onQuantityChange(Math.min(MAX_QTY, quantity + 1));
+  const dec = () => onQuantityChange(Math.max(QTY_MIN, quantity - QTY_STEP));
+  const inc = () => onQuantityChange(Math.min(QTY_MAX, quantity + QTY_STEP));
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Strip non-digits; clamp to [MIN_QTY, MAX_QTY]. Empty input is treated as
-    // MIN_QTY so the field always reflects a valid value when the user blurs.
+    // Strip non-digits and clamp. We do NOT snap to a multiple of QTY_STEP
+    // here — that would clobber the user mid-typing (e.g. typing "15" snaps
+    // to 20 before they can finish typing "150"). snapQuantity() runs on blur
+    // and at submit time instead.
     const raw = e.target.value.replace(/[^\d]/g, "");
-    if (raw === "") return onQuantityChange(MIN_QTY);
+    if (raw === "") return onQuantityChange(QTY_MIN);
     const n = parseInt(raw, 10);
     if (Number.isNaN(n)) return;
-    onQuantityChange(Math.max(MIN_QTY, Math.min(MAX_QTY, n)));
+    onQuantityChange(Math.max(QTY_MIN, Math.min(QTY_MAX, n)));
   };
+  const handleInputBlur = () => onQuantityChange(snapQuantity(quantity));
 
   return (
     <aside className="bg-white rounded-card p-6 lg:sticky lg:top-24 flex flex-col gap-5">
       <h2 className="text-h3 text-fg">주문 요약</h2>
 
       <div className="flex justify-between items-center gap-3">
-        <span className="text-body text-fg">수량</span>
+        <div className="flex flex-col">
+          <span className="text-body text-fg">수량</span>
+          <span className="text-caption text-muted">10건 단위</span>
+        </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={dec}
-            disabled={isLoading || quantity <= MIN_QTY}
+            disabled={isLoading || quantity <= QTY_MIN}
             aria-label="수량 감소"
             className="w-8 h-8 rounded-full bg-card-light text-fg hover:bg-card disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
@@ -57,14 +66,15 @@ export function OrderSummaryCard({
             pattern="[0-9]*"
             value={quantity}
             onChange={handleInputChange}
+            onBlur={handleInputBlur}
             disabled={isLoading}
             aria-label="수량"
-            className="w-14 h-8 text-center text-body text-fg bg-card-light/30 rounded-md border border-card-light focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-60"
+            className="w-16 h-8 text-center text-body text-fg bg-card-light/30 rounded-md border border-card-light focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-60"
           />
           <button
             type="button"
             onClick={inc}
-            disabled={isLoading || quantity >= MAX_QTY}
+            disabled={isLoading || quantity >= QTY_MAX}
             aria-label="수량 증가"
             className="w-8 h-8 rounded-full bg-card-light text-fg hover:bg-card disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >

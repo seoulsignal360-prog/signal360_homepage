@@ -5,6 +5,14 @@ import { AgreementCheckboxes } from "@/app/checkout/components/AgreementCheckbox
 import { BuyerInfoForm } from "@/app/checkout/components/BuyerInfoForm";
 import { OrderSummaryCard } from "@/app/checkout/components/OrderSummaryCard";
 import { ProductSummaryCard } from "@/app/checkout/components/ProductSummaryCard";
+import { RegionSelect } from "@/app/checkout/components/RegionSelect";
+import {
+  QTY_MIN,
+  isValidQuantity,
+  isValidRegion,
+  snapQuantity,
+  type Region,
+} from "@/lib/checkout/constants";
 
 // SeedPay's pgAsistant.js exposes a bare global `SendPay()` (not a namespaced
 // `pgAsistant.SendPay`). It builds an iframe overlay, sets form.target to that
@@ -88,7 +96,8 @@ export function CheckoutForm({
     privacy: false,
     payment: false,
   });
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number>(QTY_MIN);
+  const [region, setRegion] = useState<Region | "">("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -112,13 +121,24 @@ export function CheckoutForm({
   const isNameValid = buyer.name.trim().length >= 2;
   const isPhoneValid = PHONE_RE.test(buyer.phone);
   const isEmailValid = !buyer.email || EMAIL_RE.test(buyer.email);
+  const isRegionValid = isValidRegion(region);
+  const isQuantityValid = isValidQuantity(quantity);
   const allAgreed =
     agreements.terms && agreements.privacy && agreements.payment;
   const isFormValid =
-    isNameValid && isPhoneValid && isEmailValid && allAgreed;
+    isNameValid &&
+    isPhoneValid &&
+    isEmailValid &&
+    isRegionValid &&
+    isQuantityValid &&
+    allAgreed;
 
   const handleSubmit = async () => {
     if (!isFormValid || isLoading) return;
+    // Snap one more time in case the user typed a non-multiple-of-10 and hit
+    // submit without blurring the input first.
+    const snappedQty = snapQuantity(quantity);
+    if (snappedQty !== quantity) setQuantity(snappedQty);
     setIsLoading(true);
     try {
       const res = await fetch("/api/payment/request", {
@@ -126,7 +146,8 @@ export function CheckoutForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productSlug: product.slug,
-          quantity,
+          quantity: snappedQty,
+          region,
           buyer,
           agreements,
         }),
@@ -176,6 +197,7 @@ export function CheckoutForm({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
       <div className="lg:col-span-2 flex flex-col gap-8">
         <ProductSummaryCard product={product} />
+        <RegionSelect value={region} onChange={setRegion} />
         <BuyerInfoForm buyer={buyer} onChange={setBuyer} />
         <AgreementCheckboxes
           agreements={agreements}
