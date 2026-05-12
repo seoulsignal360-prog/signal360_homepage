@@ -29,13 +29,16 @@ export function FeatureRow({
           ))}
         </ul>
       </div>
-      <div className="relative w-full md:w-[401px] md:shrink-0 aspect-square rounded-card overflow-hidden bg-card-light">
+      {/* Tone-unify the stock illustrations: slightly desaturate the image
+          and overlay a faint indigo wash via :after so the four feature
+          rows feel like one set rather than four separate clipart pieces. */}
+      <div className="relative w-full md:w-[401px] md:shrink-0 aspect-square rounded-card overflow-hidden bg-card-light after:absolute after:inset-0 after:bg-gradient-to-br after:from-primary/10 after:to-transparent after:pointer-events-none">
         <Image
           src={imageSrc}
           alt={imageAlt}
           fill
           sizes="(min-width: 768px) 401px, 100vw"
-          className="object-contain"
+          className="object-contain saturate-[0.85]"
         />
       </div>
     </div>

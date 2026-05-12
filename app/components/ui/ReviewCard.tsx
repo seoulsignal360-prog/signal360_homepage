@@ -14,7 +14,10 @@ export function ReviewCard({
   avatarSrc,
 }: ReviewCardProps) {
   return (
-    <div className="bg-card-light rounded-card p-8 h-[258px] flex flex-col gap-6">
+    // Subtle lift + shadow on hover so the marquee feels interactive as
+    // the user scans across testimonials. Background brightens to white
+    // so the active card visually pops above the row of muted siblings.
+    <div className="bg-card-light hover:bg-white rounded-card p-8 h-[258px] flex flex-col gap-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_28px_-12px_rgba(26,29,46,0.18)]">
       <div className="flex items-center gap-4">
         <div className="relative shrink-0 w-[60px] h-[60px] rounded-full overflow-hidden bg-white">
           <Image

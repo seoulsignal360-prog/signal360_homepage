@@ -21,7 +21,10 @@ export async function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-[90px] bg-navy">
+      {/* Glassmorphism header: semi-transparent navy with backdrop blur
+          and a faint bottom hairline. Content scrolling underneath shows
+          through subtly, giving the page a sense of depth. */}
+      <header className="sticky top-0 z-50 h-[90px] bg-navy/85 backdrop-blur-md border-b border-white/5">
         <div className="mx-auto max-w-content h-full px-6 flex items-center justify-between">
           <Link
             href="/#top"
